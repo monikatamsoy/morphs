@@ -38,12 +38,15 @@ class App{
         this.mouse = new THREE.Vector2();
             this.mouse.x = this.mouse.y = -1;
 
+        this.modelGroup = new THREE.Group();
+            
         this.raycaster = new THREE.Raycaster();
-        this.gui = new dat.GUI();
+        
         
         this.loadGLTF();
-        
+        this.clicked = false;
         this.init();
+        
         // this.animate();
         
         this.controls = new OrbitControls( this.camera, this.renderer.domElement );
@@ -52,6 +55,8 @@ class App{
         
         window.addEventListener('resize', this.resize.bind(this) );
         document.addEventListener("mousemove", this.onMouseMove, false)
+        document.addEventListener("click", this.onMouseClick, false)
+
 	}	
     
     setEnvironment(){
@@ -71,10 +76,39 @@ class App{
             console.error( 'An error occurred setting the environment');
         } );
     }
+
+    getText(text) {
+        const self = this;
+        let fontLoader = new THREE.FontLoader();
+                fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function(font) {
+                    const material = new THREE.MeshPhongMaterial({
+                        color: 0x9e0031,
+                        specular: 0x555555,
+                        shininess: 30
+                    });
+                    const geometry = new THREE.TextGeometry(text, {
+                        font: font,
+                        size: 0.04,
+                        height: 0.01,
+                        curveSegments: 5,
+                        // bevelEnabled: true,
+                        material: 0,
+                        extrudeMaterial: 1
+                    });
+                    geometry.castShadow = true
+
+                    self.textMesh = new THREE.Mesh(geometry, material)
+                    self.textMesh.position.set(-1,1,0)
+                    // self.textMesh.lookAt(self.camera.position)
+                    self.scene.add(self.textMesh)
+                })
+                
+    }
+    
     init() {
         const axesHelper = new THREE.AxesHelper( 5 );
         this.scene.add( axesHelper );  
-        
+        this.getText("Load another model")
             }
 
     onMouseMove = (e) => {
@@ -85,18 +119,12 @@ class App{
         this.raycaster.setFromCamera( this.mouse, this.camera );
         if(this.scene) {
 
-            var faceMesh = this.scene.children[3].children[0].children[0].children[0].children[1].children[0]
+            var faceScene = this.scene.getObjectByName('Scene')
+            // var faceMesh = this.scene.children[4].children[0].children[0].children[0].children[1].children[0]
+            var faceMesh = faceScene.children[0].children[0].children[0].children[1].children[0]
             
             var positions = new Float32Array() 
             positions = faceMesh.geometry.attributes.position;
-            // let p1 = new THREE.Vector3();
-                
-            // var vert1 = new THREE.Vector3().fromArray(faceMesh.geometry.attributes.position.array);
-            // console.log(vert1)
-            // faceMesh.localToWorld(vert1);
-            // faceMesh.updateMatrixWorld();
-
-            // let positions: Float32Array = geo.attributes["position"].array;
             let p;
             let pointCount = positions.count / 3;
             for (let i = 0; i < pointCount; i++) {
@@ -104,48 +132,70 @@ class App{
                 p = new THREE.Vector3(positions.array[i * 3], positions.array[i * 3 + 1], positions.array[i * 3 + 2]);
                 
                 faceMesh.localToWorld(p);
-                
-
             }
                         faceMesh.updateMatrixWorld();
                         
 
-            var intersects = this.raycaster.intersectObjects( this.scene.children[3].children[0].children[0].children[0].children[1].children );
+            var intersectsModel = this.raycaster.intersectObjects( faceScene.children[0].children[0].children[0].children[1].children );
             // var intersectsHospital = raycaster.intersectObjects( pinGroup.children );
-            if (intersects[0] )
+            if (intersectsModel[0] )
             {
-                 console.log(intersects[0].point)
+                 console.log(intersectsModel[0].point)
                 }
-        }
-            
-        } 
-        
-        getWorldPosition(mesh) {
-            
-
+            var intersectsText = this.raycaster.intersectObject(this.scene.children[3])
+            if(intersectsText[0]) {
                 
-                var vertexCopy = mesh.geometry.attributes.position.array.clone();
-                mesh.localToWorld(vertexCopy);
-            
-            
-        }
-
-        getMorphs(mesh){
-            var params = {
-                Blink_right: 0,
-                Flex_right: 0,
+                console.log("text", intersectsText[0].point)
             }
-                
+        }           
+    } 
+
+    onMouseClick = (e) => {
         
-        var folder1 = this.gui.addFolder("light");
+        e.preventDefault();
+        
+        this.mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
+        this.mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+        
+        // console.log(mouse)
+        this.raycaster.setFromCamera( this.mouse, this.camera );
+
+        var intersects = this.raycaster.intersectObject( this.scene.children[3]);
+        if (intersects[0] )
+        {   
+            this.clicked = true;
+            this.loadGLTF();
+            this.scene.children[3].visible = false
+        } 
+         
+    
+}
+
+
+        
+        
+    getWorldPosition(mesh) {
+        var vertexCopy = mesh.geometry.attributes.position.array.clone();
+        mesh.localToWorld(vertexCopy);           
+    }
+
+    getMorphs(mesh){
+        this.gui = new dat.GUI();
+        var params = {
+            Blink_right: 0,
+            Flex_right: 0,
+        } 
+        var folder1 = this.gui.addFolder("Light");
         folder1.add(this.ambient, "intensity", 0, 10);
         // folder1.open()
 
-        var folder2 = this.gui.addFolder("Morph targets");
-            folder2.add(params, 'Blink_right',0,1).step(0.01).onChange( value => { mesh.morphTargetInfluences[ 0 ] = value; })
-            folder2.add(params, 'Flex_right',0,1).step(0.01).onChange( value => { mesh.morphTargetInfluences[ 1 ] = value; })
 
-            }
+        var folder2 = this.gui.addFolder("Morph targets");
+        folder2.add(params, 'Blink_right',0,1).step(0.01).onChange( value => { mesh.morphTargetInfluences[ 0 ] = value; })
+        folder2.add(params, 'Flex_right',0,1).step(0.01).onChange( value => { mesh.morphTargetInfluences[ 1 ] = value; })
+
+        
+        }
 
 
     loadGLTF(){
@@ -166,17 +216,31 @@ class App{
                         child.material.metalness = 0.2;
                     }
                 })
+
+                if(self.clicked == true) {
+                    self.scene.getObjectByName('Scene').position.set(2,0,0)
+                    self.scene.getObjectByName('Scene').rotateY(-Math.PI/8)
+                    gltf.scene.rotateY(Math.PI/10)
+                    gltf.scene.position.set(-2,0,0)
+                }
                 self.chair = gltf.scene;
                 self.chair.scale.set(4,4,4)
                 // self.chair.rotation.z = Math.PI;
-
+                
+                // self.modelGroup.add(gltf.scene)
+                
                 
 				self.scene.add( gltf.scene );
+                // self.scene.add( self.modelGroup);
+
                 
                 self.loadingBar.visible = false;
+
                 const mesh = gltf.scene.children[0].children[0].children[0].children[1].children[0]
+                
                 self.getMorphs(mesh)
                 // self.getWorldPosition(mesh);
+                
 				
 				self.renderer.setAnimationLoop( self.render.bind(self));
 			},
