@@ -77,7 +77,7 @@ class App{
         } );
     }
 
-    getText(text) {
+    getText(text, x,y,z) {
         const self = this;
         let fontLoader = new THREE.FontLoader();
                 fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function(font) {
@@ -98,7 +98,7 @@ class App{
                     geometry.castShadow = true
 
                     self.textMesh = new THREE.Mesh(geometry, material)
-                    self.textMesh.position.set(-1,1,0)
+                    self.textMesh.position.set(x,y,z)
                     // self.textMesh.lookAt(self.camera.position)
                     self.scene.add(self.textMesh)
                 })
@@ -108,7 +108,7 @@ class App{
     init() {
         const axesHelper = new THREE.AxesHelper( 5 );
         this.scene.add( axesHelper );  
-        this.getText("Load another model")
+        this.getText("Load another model", -1,1,0)
             }
 
     onMouseMove = (e) => {
@@ -119,7 +119,7 @@ class App{
         this.raycaster.setFromCamera( this.mouse, this.camera );
         if(this.scene) {
 
-            var faceScene = this.scene.getObjectByName('Scene')
+            var faceScene = this.scene.children[4]
             // var faceMesh = this.scene.children[4].children[0].children[0].children[0].children[1].children[0]
             var faceMesh = faceScene.children[0].children[0].children[0].children[1].children[0]
             
@@ -140,7 +140,8 @@ class App{
             // var intersectsHospital = raycaster.intersectObjects( pinGroup.children );
             if (intersectsModel[0] )
             {
-                 console.log(intersectsModel[0])
+                 console.log("model2",intersectsModel[0].point);
+                //  this.getText(intersectsModel[0].point.x+","+intersectsModel[0].point.y+","+intersectsModel[0].point.z, intersectsModel[0].point.x,intersectsModel[0].point.y, intersectsModel[0].point.z)
                 }
             var intersectsText = this.raycaster.intersectObject(this.scene.children[3])
             if(intersectsText[0]) {
@@ -149,9 +150,9 @@ class App{
             } 
             if (this.scene.children[5]) {
 
-                var intersectsModel2 = this.raycaster.intersectObjects( this.scene.children[5].children[0].children[0].children[0].children[1].children );
+                var intersectsModel2 = this.raycaster.intersectObjects( this.scene.children[5].children[0].children[0].children[0].children[1].children);
                 if (intersectsModel2[0]) {
-                    // console.log(intersectsModel2[0])
+                    console.log("model1",intersectsModel2[0].point)
                 }
             }
         }           
