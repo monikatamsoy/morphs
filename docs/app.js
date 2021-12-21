@@ -143,11 +143,11 @@ class App{
                  console.log("model2",intersectsModel[0].point);
                 //  this.getText(intersectsModel[0].point.x+","+intersectsModel[0].point.y+","+intersectsModel[0].point.z, intersectsModel[0].point.x,intersectsModel[0].point.y, intersectsModel[0].point.z)
                 }
-            var intersectsText = this.raycaster.intersectObject(this.scene.children[3])
-            if(intersectsText[0]) {
+            // var intersectsText = this.raycaster.intersectObject(this.scene.children[3])
+            // if(intersectsText[0]) {
                 
-                // console.log("text", intersectsText[0].point)
-            } 
+            //     // console.log("text", intersectsText[0].point)
+            // } 
             if (this.scene.children[5]) {
 
                 var intersectsModel2 = this.raycaster.intersectObjects( this.scene.children[5].children[0].children[0].children[0].children[1].children);
