@@ -1,6 +1,5 @@
 import * as THREE from './libs/three/three.module.js';
 import { GLTFLoader } from './libs/three/jsm/GLTFLoader.js';
-import { FBXLoader } from './libs/three/jsm/FBXLoader.js';
 import { RGBELoader } from './libs/three/jsm/RGBELoader.js';
 import { OrbitControls } from './libs/three/jsm/OrbitControls.js';
 import { LoadingBar } from './libs/LoadingBar.js';
@@ -15,16 +14,17 @@ class App{
         this.camera.lookAt(0,0,0)
         
 		this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color( 0xaaaaaa );
+        // this.scene.background = new THREE.Color( 0xaaaaaa );
         
 		this.ambient = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 4);
 		this.scene.add(this.ambient);
         
-        // const light = new THREE.DirectionalLight( 0xFFFFFF, 1.5 );
-        // light.position.set( 0.2, 1, 1);
-        // this.scene.add(light);
+
         const light = new THREE.AmbientLight( 0x404040 ); // soft white light
         this.scene.add( light );
+        
+        const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+        this.scene.add( directionalLight );
 			
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true } );
 		this.renderer.setPixelRatio( window.devicePixelRatio );
@@ -32,7 +32,7 @@ class App{
         this.renderer.outputEncoding = THREE.sRGBEncoding;
         this.renderer.physicallyCorrectLights = true;
         container.appendChild( this.renderer.domElement );
-		// this.setEnvironment();
+		
 		
         this.loadingBar = new LoadingBar();
         this.mouse = new THREE.Vector2();
@@ -47,7 +47,6 @@ class App{
         this.clicked = false;
         this.init();
         
-        // this.animate();
         
         this.controls = new OrbitControls( this.camera, this.renderer.domElement );
         this.controls.target.set(0, 0, 0);
@@ -59,25 +58,8 @@ class App{
 
 	}	
     
-    setEnvironment(){
-        const loader = new RGBELoader().setDataType( THREE.UnsignedByteType );
-        const pmremGenerator = new THREE.PMREMGenerator( this.renderer );
-        pmremGenerator.compileEquirectangularShader();
-        
-        const self = this;
-        
-        loader.load( './assets/venice_sunset_1k.hdr', ( texture ) => {
-          const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
-          pmremGenerator.dispose();
-
-          self.scene.environment = envMap;
-
-        }, undefined, (err)=>{
-            console.error( 'An error occurred setting the environment');
-        } );
-    }
-
-    getText(text, x,y,z) {
+    
+    getText(text,visibility, x,y,z) {
         const self = this;
         let fontLoader = new THREE.FontLoader();
                 fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function(font) {
@@ -99,16 +81,38 @@ class App{
 
                     self.textMesh = new THREE.Mesh(geometry, material)
                     self.textMesh.position.set(x,y,z)
+                    self.textMesh.name = text;
+                    self.textMesh.visible = visibility;
                     // self.textMesh.lookAt(self.camera.position)
                     self.scene.add(self.textMesh)
                 })
                 
     }
+
+    loadBackground = () => {
+        // Load the images used in the background.
+        var path = "assets/cubemap/";
+        var format = ".jpeg";
+        var urls = [
+            path + "px" + format,
+            path + "nx" + format,
+            path + "py" + format,
+            path + "ny" + format,
+            path + "pz" + format,
+            path + "nz" + format,
+        ];
+        var reflectionCube = new THREE.CubeTextureLoader().load(urls);
+        reflectionCube.format = THREE.RGBFormat;
+        this.scene.background = reflectionCube;
+    }
     
     init() {
         const axesHelper = new THREE.AxesHelper( 5 );
-        this.scene.add( axesHelper );  
-        this.getText("Load another model", -1,1,0)
+        // this.scene.add( axesHelper );  
+        this.getText("Load another model",true, -1,1,0)
+        this.getText("Facing", false,0,0,0)
+        this.loadBackground();
+        
             }
 
     onMouseMove = (e) => {
@@ -119,8 +123,7 @@ class App{
         this.raycaster.setFromCamera( this.mouse, this.camera );
         if(this.scene) {
 
-            var faceScene = this.scene.children[4]
-            // var faceMesh = this.scene.children[4].children[0].children[0].children[0].children[1].children[0]
+            var faceScene = this.scene.getObjectByName('tobey1')
             var faceMesh = faceScene.children[0].children[0].children[0].children[1].children[0]
             
             var positions = new Float32Array() 
@@ -128,31 +131,21 @@ class App{
             let p;
             let pointCount = positions.count / 3;
             for (let i = 0; i < pointCount; i++) {
-                // p1.fromBufferAttribute(position, i * 3 + 0);
-                p = new THREE.Vector3(positions.array[i * 3], positions.array[i * 3 + 1], positions.array[i * 3 + 2]);
-                
+                p = new THREE.Vector3(positions.array[i * 3], positions.array[i * 3 + 1], positions.array[i * 3 + 2]);               
                 faceMesh.localToWorld(p);
             }
-                        faceMesh.updateMatrixWorld();
-                        
-
+            faceMesh.updateMatrixWorld();
             var intersectsModel = this.raycaster.intersectObjects( faceScene.children[0].children[0].children[0].children[1].children );
-            // var intersectsHospital = raycaster.intersectObjects( pinGroup.children );
             if (intersectsModel[0] )
             {
-                 console.log("model2",intersectsModel[0].point);
+                 console.log("model1",intersectsModel[0].point);
                 //  this.getText(intersectsModel[0].point.x+","+intersectsModel[0].point.y+","+intersectsModel[0].point.z, intersectsModel[0].point.x,intersectsModel[0].point.y, intersectsModel[0].point.z)
                 }
-            // var intersectsText = this.raycaster.intersectObject(this.scene.children[3])
-            // if(intersectsText[0]) {
-                
-            //     // console.log("text", intersectsText[0].point)
-            // } 
-            if (this.scene.children[5]) {
-
-                var intersectsModel2 = this.raycaster.intersectObjects( this.scene.children[5].children[0].children[0].children[0].children[1].children);
+            
+            if (this.scene.getObjectByName('tobey2')) {
+                var intersectsModel2 = this.raycaster.intersectObjects( this.scene.getObjectByName('tobey2').children[0].children[0].children[0].children[1].children);
                 if (intersectsModel2[0]) {
-                    console.log("model1",intersectsModel2[0].point)
+                    console.log("model2",intersectsModel2[0].point)
                 }
             }
         }           
@@ -168,24 +161,17 @@ class App{
         // console.log(mouse)
         this.raycaster.setFromCamera( this.mouse, this.camera );
 
-        var intersects = this.raycaster.intersectObject( this.scene.children[3]);
+        var intersects = this.raycaster.intersectObject( this.scene.getObjectByName('Load another model'));
         if (intersects[0] )
         {   
             this.clicked = true;
             this.loadGLTF();
-            this.scene.children[3].visible = false
+            this.scene.getObjectByName('Load another model').visible = false
         } 
          
     
 }
 
-
-        
-        
-    getWorldPosition(mesh) {
-        var vertexCopy = mesh.geometry.attributes.position.array.clone();
-        mesh.localToWorld(vertexCopy);           
-    }
 
     getMorphs(mesh){
         this.gui = new dat.GUI();
@@ -201,8 +187,7 @@ class App{
         var folder2 = this.gui.addFolder("Morph targets");
         folder2.add(params, 'Blink_right',0,1).step(0.01).onChange( value => { mesh.morphTargetInfluences[ 0 ] = value; })
         folder2.add(params, 'Flex_right',0,1).step(0.01).onChange( value => { mesh.morphTargetInfluences[ 1 ] = value; })
-
-        
+       
         }
 
 
@@ -224,36 +209,28 @@ class App{
                         child.material.metalness = 0.2;
                     }
                 })
+                gltf.scene.name = 'tobey1'
 
                 if(self.clicked == true) {
-                    self.scene.getObjectByName('Scene').position.set(2,0,0)
-                    self.scene.getObjectByName('Scene').rotateY(-Math.PI/8)
-                    gltf.scene.rotateY(Math.PI/10)
+                    gltf.scene.name = 'tobey2'
+                    self.scene.getObjectByName('tobey1').position.set(2,0,0)
+                    self.scene.getObjectByName('tobey1').rotateY(-Math.PI/8)
+                    gltf.scene.rotateY(Math.PI/8)
                     gltf.scene.position.set(-2,0,0)
                 }
-                self.chair = gltf.scene;
-                self.chair.scale.set(4,4,4)
-                // self.chair.rotation.z = Math.PI;
-                
-                // self.modelGroup.add(gltf.scene)
-                
+                self.model = gltf.scene;
+                self.model.scale.set(4,4,4)
+
                 const modelAxesHelper = new THREE.AxesHelper( 0.5 );
                 
-                gltf.scene.add( modelAxesHelper );  
+                // gltf.scene.add( modelAxesHelper );  
                 
                 
-				self.scene.add( gltf.scene );
-                // self.scene.add( self.modelGroup);
-
-                
+				self.scene.add( gltf.scene );                
                 self.loadingBar.visible = false;
 
-                const mesh = gltf.scene.children[0].children[0].children[0].children[1].children[0]
-
-                
-                self.getMorphs(mesh)
-                // self.getWorldPosition(mesh);
-                
+                const mesh = gltf.scene.children[0].children[0].children[0].children[1].children[0]               
+                self.getMorphs(mesh)                
 				
 				self.renderer.setAnimationLoop( self.render.bind(self));
 			},
@@ -273,13 +250,30 @@ class App{
     }
 
     checkFacing = () => {
-        console.log()
-            }
-    
-    animate() {
-        render();
-        requestAnimationFrame( animate );		
+        const start = this.scene.getObjectByName('tobey1');
+        const end = new THREE.Object3D() 
+        var direction = new THREE.Vector3();
+        // console.log(this.scene.children[5].quaternion)
+        var directionQuaternion = new THREE.Vector3(0,0,-1).applyQuaternion(this.scene.getObjectByName('tobey1').quaternion)
+        // console.log(direction)
+        end.position.set(0,0,0)
+        this.raycaster.set(start.position, direction.subVectors(end.position, directionQuaternion).normalize());
+
+        const intersectsAnother = this.raycaster.intersectObjects(this.scene.getObjectByName('tobey2').children[0].children[0].children[0].children[1].children)
+        if(intersectsAnother[0]) {
+            
+            let text = this.scene.getObjectByName('Facing')
+            text.scale.set(2,2,2)
+            text.visible = true
+
+        } else {
+            
+            let text = this.scene.getObjectByName('Facing')
+            
+            text.visible = false
+
         }
+            }
     
     
     resize(){
@@ -290,14 +284,11 @@ class App{
     }
     
 	render( ) {   
-        if(this.clicked == true && this.scene.children[5]) {
-            this.scene.children[4].rotation.y -= 0.01;
-            this.scene.children[5].rotation.y += 0.01;
+        if(this.clicked == true && this.scene.getObjectByName('tobey2')) {
+            this.scene.getObjectByName('tobey1').rotation.y -= 0.01;
+            this.scene.getObjectByName('tobey2').rotation.y += 0.01;
             this.checkFacing()
             }
-
-        
-        // this.chair.rotateY( 0.01 );
         this.renderer.render( this.scene, this.camera );
     }
 }
