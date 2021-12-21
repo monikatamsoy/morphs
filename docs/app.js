@@ -140,12 +140,19 @@ class App{
             // var intersectsHospital = raycaster.intersectObjects( pinGroup.children );
             if (intersectsModel[0] )
             {
-                 console.log(intersectsModel[0].point)
+                 console.log(intersectsModel[0])
                 }
             var intersectsText = this.raycaster.intersectObject(this.scene.children[3])
             if(intersectsText[0]) {
                 
-                console.log("text", intersectsText[0].point)
+                // console.log("text", intersectsText[0].point)
+            } 
+            if (this.scene.children[5]) {
+
+                var intersectsModel2 = this.raycaster.intersectObjects( this.scene.children[5].children[0].children[0].children[0].children[1].children );
+                if (intersectsModel2[0]) {
+                    // console.log(intersectsModel2[0])
+                }
             }
         }           
     } 
@@ -229,6 +236,10 @@ class App{
                 
                 // self.modelGroup.add(gltf.scene)
                 
+                const modelAxesHelper = new THREE.AxesHelper( 0.5 );
+                
+                gltf.scene.add( modelAxesHelper );  
+                
                 
 				self.scene.add( gltf.scene );
                 // self.scene.add( self.modelGroup);
@@ -237,6 +248,7 @@ class App{
                 self.loadingBar.visible = false;
 
                 const mesh = gltf.scene.children[0].children[0].children[0].children[1].children[0]
+
                 
                 self.getMorphs(mesh)
                 // self.getWorldPosition(mesh);
@@ -259,6 +271,9 @@ class App{
         );
     }
 
+    checkFacing = () => {
+        console.log()
+            }
     
     animate() {
         render();
@@ -267,12 +282,20 @@ class App{
     
     
     resize(){
+        
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize( window.innerWidth, window.innerHeight );  
     }
     
 	render( ) {   
+        if(this.clicked == true && this.scene.children[5]) {
+            this.scene.children[4].rotation.y -= 0.01;
+            this.scene.children[5].rotation.y += 0.01;
+            this.checkFacing()
+            }
+
+        
         // this.chair.rotateY( 0.01 );
         this.renderer.render( this.scene, this.camera );
     }
